@@ -96,11 +96,7 @@ func (t *InstallSkillTool) Execute(ctx context.Context, args map[string]any) *To
 	if !force {
 		if _, err := os.Stat(targetDir); err == nil {
 			return ErrorResult(
-				fmt.Sprintf(
-					"skill %q already installed at %s. Use force=true to reinstall.",
-					slug,
-					targetDir,
-				),
+				fmt.Sprintf("skill %q already installed at %s. Use force=true to reinstall.", slug, targetDir),
 			)
 		}
 	} else {
@@ -146,9 +142,7 @@ func (t *InstallSkillTool) Execute(ctx context.Context, args map[string]any) *To
 					"error":      rmErr.Error(),
 				})
 		}
-		return ErrorResult(
-			fmt.Sprintf("skill %q is flagged as malicious and cannot be installed", slug),
-		)
+		return ErrorResult(fmt.Sprintf("skill %q is flagged as malicious and cannot be installed", slug))
 	}
 
 	// Write origin metadata.
@@ -168,10 +162,7 @@ func (t *InstallSkillTool) Execute(ctx context.Context, args map[string]any) *To
 	// Build result with moderation warning if suspicious.
 	var output string
 	if result.IsSuspicious {
-		output = fmt.Sprintf(
-			"⚠️ Warning: skill %q is flagged as suspicious (may contain risky patterns).\n\n",
-			slug,
-		)
+		output = fmt.Sprintf("⚠️ Warning: skill %q is flagged as suspicious (may contain risky patterns).\n\n", slug)
 	}
 	output += fmt.Sprintf("Successfully installed skill %q v%s from %s registry.\nLocation: %s\n",
 		slug, result.Version, registry.Name(), targetDir)

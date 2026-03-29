@@ -76,8 +76,7 @@ func TestEditTool_EditFile_NotFound(t *testing.T) {
 	}
 
 	// Should mention file not found
-	if !strings.Contains(result.ForLLM, "not found") &&
-		!strings.Contains(result.ForUser, "not found") {
+	if !strings.Contains(result.ForLLM, "not found") && !strings.Contains(result.ForUser, "not found") {
 		t.Errorf("Expected 'file not found' message, got ForLLM: %s", result.ForLLM)
 	}
 }
@@ -104,8 +103,7 @@ func TestEditTool_EditFile_OldTextNotFound(t *testing.T) {
 	}
 
 	// Should mention old_text not found
-	if !strings.Contains(result.ForLLM, "not found") &&
-		!strings.Contains(result.ForUser, "not found") {
+	if !strings.Contains(result.ForLLM, "not found") && !strings.Contains(result.ForUser, "not found") {
 		t.Errorf("Expected 'not found' message, got ForLLM: %s", result.ForLLM)
 	}
 }

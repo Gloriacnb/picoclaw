@@ -79,14 +79,8 @@ type LLMInterceptor interface {
 }
 
 type ToolInterceptor interface {
-	BeforeTool(
-		ctx context.Context,
-		call *ToolCallHookRequest,
-	) (*ToolCallHookRequest, HookDecision, error)
-	AfterTool(
-		ctx context.Context,
-		result *ToolResultHookResponse,
-	) (*ToolResultHookResponse, HookDecision, error)
+	BeforeTool(ctx context.Context, call *ToolCallHookRequest) (*ToolCallHookRequest, HookDecision, error)
+	AfterTool(ctx context.Context, result *ToolResultHookResponse) (*ToolResultHookResponse, HookDecision, error)
 }
 
 type ToolApprover interface {
@@ -301,10 +295,7 @@ func (hm *HookManager) dispatchEvents() {
 	}
 }
 
-func (hm *HookManager) BeforeLLM(
-	ctx context.Context,
-	req *LLMHookRequest,
-) (*LLMHookRequest, HookDecision) {
+func (hm *HookManager) BeforeLLM(ctx context.Context, req *LLMHookRequest) (*LLMHookRequest, HookDecision) {
 	if hm == nil || req == nil {
 		return req, HookDecision{Action: HookActionContinue}
 	}
@@ -335,10 +326,7 @@ func (hm *HookManager) BeforeLLM(
 	return current, HookDecision{Action: HookActionContinue}
 }
 
-func (hm *HookManager) AfterLLM(
-	ctx context.Context,
-	resp *LLMHookResponse,
-) (*LLMHookResponse, HookDecision) {
+func (hm *HookManager) AfterLLM(ctx context.Context, resp *LLMHookResponse) (*LLMHookResponse, HookDecision) {
 	if hm == nil || resp == nil {
 		return resp, HookDecision{Action: HookActionContinue}
 	}

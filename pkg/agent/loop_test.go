@@ -591,9 +591,7 @@ func TestProcessMessage_MediaToolHandledSkipsFollowUpLLMAndFinalText(t *testing.
 	store := media.NewFileMediaStore()
 	al.SetMediaStore(store)
 	telegramChannel := &fakeMediaChannel{fakeChannel: fakeChannel{id: "rid-telegram"}}
-	al.SetChannelManager(
-		newStartedTestChannelManager(t, msgBus, store, "telegram", telegramChannel),
-	)
+	al.SetChannelManager(newStartedTestChannelManager(t, msgBus, store, "telegram", telegramChannel))
 
 	imagePath := filepath.Join(tmpDir, "screen.png")
 	if err := os.WriteFile(imagePath, []byte("fake screenshot"), 0o644); err != nil {
@@ -615,10 +613,7 @@ func TestProcessMessage_MediaToolHandledSkipsFollowUpLLMAndFinalText(t *testing.
 		t.Fatalf("processMessage() error = %v", err)
 	}
 	if response != "" {
-		t.Fatalf(
-			"expected no final response when media tool already handled delivery, got %q",
-			response,
-		)
+		t.Fatalf("expected no final response when media tool already handled delivery, got %q", response)
 	}
 	if provider.calls != 1 {
 		t.Fatalf("expected exactly 1 LLM call, got %d", provider.calls)
@@ -631,20 +626,13 @@ func TestProcessMessage_MediaToolHandledSkipsFollowUpLLMAndFinalText(t *testing.
 	}
 
 	if len(telegramChannel.sentMedia) != 1 {
-		t.Fatalf(
-			"expected exactly 1 synchronously sent media message, got %d",
-			len(telegramChannel.sentMedia),
-		)
+		t.Fatalf("expected exactly 1 synchronously sent media message, got %d", len(telegramChannel.sentMedia))
 	}
-	if telegramChannel.sentMedia[0].Channel != "telegram" ||
-		telegramChannel.sentMedia[0].ChatID != "chat1" {
+	if telegramChannel.sentMedia[0].Channel != "telegram" || telegramChannel.sentMedia[0].ChatID != "chat1" {
 		t.Fatalf("unexpected sent media target: %+v", telegramChannel.sentMedia[0])
 	}
 	if len(telegramChannel.sentMedia[0].Parts) != 1 {
-		t.Fatalf(
-			"expected exactly 1 sent media part, got %d",
-			len(telegramChannel.sentMedia[0].Parts),
-		)
+		t.Fatalf("expected exactly 1 sent media part, got %d", len(telegramChannel.sentMedia[0].Parts))
 	}
 
 	select {
@@ -672,8 +660,7 @@ func TestProcessMessage_MediaToolHandledSkipsFollowUpLLMAndFinalText(t *testing.
 		t.Fatal("expected session history to be saved")
 	}
 	last := history[len(history)-1]
-	if last.Role != "assistant" ||
-		last.Content != "Requested output delivered via tool attachment." {
+	if last.Role != "assistant" || last.Content != "Requested output delivered via tool attachment." {
 		t.Fatalf("expected handled assistant summary in history, got %+v", last)
 	}
 }
@@ -698,9 +685,7 @@ func TestProcessMessage_HandledToolProcessesQueuedSteeringBeforeReturning(t *tes
 	store := media.NewFileMediaStore()
 	al.SetMediaStore(store)
 	telegramChannel := &fakeMediaChannel{fakeChannel: fakeChannel{id: "rid-telegram"}}
-	al.SetChannelManager(
-		newStartedTestChannelManager(t, msgBus, store, "telegram", telegramChannel),
-	)
+	al.SetChannelManager(newStartedTestChannelManager(t, msgBus, store, "telegram", telegramChannel))
 
 	imagePath := filepath.Join(tmpDir, "screen-steering.png")
 	if err := os.WriteFile(imagePath, []byte("fake screenshot"), 0o644); err != nil {
@@ -729,10 +714,7 @@ func TestProcessMessage_HandledToolProcessesQueuedSteeringBeforeReturning(t *tes
 		t.Fatalf("expected 2 LLM calls after queued steering, got %d", provider.calls)
 	}
 	if len(telegramChannel.sentMedia) != 1 {
-		t.Fatalf(
-			"expected exactly 1 synchronously sent media message, got %d",
-			len(telegramChannel.sentMedia),
-		)
+		t.Fatalf("expected exactly 1 synchronously sent media message, got %d", len(telegramChannel.sentMedia))
 	}
 }
 
@@ -751,9 +733,7 @@ func TestProcessMessage_MediaArtifactCanBeForwardedBySendFile(t *testing.T) {
 	store := media.NewFileMediaStore()
 	al.SetMediaStore(store)
 	telegramChannel := &fakeMediaChannel{fakeChannel: fakeChannel{id: "rid-telegram"}}
-	al.SetChannelManager(
-		newStartedTestChannelManager(t, msgBus, store, "telegram", telegramChannel),
-	)
+	al.SetChannelManager(newStartedTestChannelManager(t, msgBus, store, "telegram", telegramChannel))
 
 	mediaDir := media.TempDir()
 	if err := os.MkdirAll(mediaDir, 0o700); err != nil {
@@ -786,20 +766,13 @@ func TestProcessMessage_MediaArtifactCanBeForwardedBySendFile(t *testing.T) {
 	}
 
 	if len(telegramChannel.sentMedia) != 1 {
-		t.Fatalf(
-			"expected exactly 1 synchronously sent media message, got %d",
-			len(telegramChannel.sentMedia),
-		)
+		t.Fatalf("expected exactly 1 synchronously sent media message, got %d", len(telegramChannel.sentMedia))
 	}
-	if telegramChannel.sentMedia[0].Channel != "telegram" ||
-		telegramChannel.sentMedia[0].ChatID != "chat1" {
+	if telegramChannel.sentMedia[0].Channel != "telegram" || telegramChannel.sentMedia[0].ChatID != "chat1" {
 		t.Fatalf("unexpected sent media target: %+v", telegramChannel.sentMedia[0])
 	}
 	if len(telegramChannel.sentMedia[0].Parts) != 1 {
-		t.Fatalf(
-			"expected exactly 1 sent media part, got %d",
-			len(telegramChannel.sentMedia[0].Parts),
-		)
+		t.Fatalf("expected exactly 1 sent media part, got %d", len(telegramChannel.sentMedia[0].Parts))
 	}
 
 	select {
@@ -1210,10 +1183,7 @@ func (m *handledMediaWithSteeringTool) Parameters() map[string]any {
 	}
 }
 
-func (m *handledMediaWithSteeringTool) Execute(
-	ctx context.Context,
-	args map[string]any,
-) *tools.ToolResult {
+func (m *handledMediaWithSteeringTool) Execute(ctx context.Context, args map[string]any) *tools.ToolResult {
 	if err := m.loop.Steer(providers.Message{Role: "user", Content: "what about this instead?"}); err != nil {
 		return tools.ErrorResult(err.Error()).WithError(err)
 	}
@@ -1366,11 +1336,7 @@ func newStrictChatCompletionTestServer(
 	}))
 }
 
-func (h testHelper) executeAndGetResponse(
-	tb testing.TB,
-	ctx context.Context,
-	msg bus.InboundMessage,
-) string {
+func (h testHelper) executeAndGetResponse(tb testing.TB, ctx context.Context, msg bus.InboundMessage) string {
 	// Use a short timeout to avoid hanging
 	timeoutCtx, cancel := context.WithTimeout(ctx, responseTimeout)
 	defer cancel()
@@ -1501,10 +1467,7 @@ func TestProcessMessage_CommandOutcomes(t *testing.T) {
 		t.Fatalf("unexpected /foo reply: %q", fooResp)
 	}
 	if provider.calls != 1 {
-		t.Fatalf(
-			"LLM should be called exactly once after /foo passthrough, calls=%d",
-			provider.calls,
-		)
+		t.Fatalf("LLM should be called exactly once after /foo passthrough, calls=%d", provider.calls)
 	}
 
 	newResp := helper.executeAndGetResponse(t, context.Background(), bus.InboundMessage{
@@ -1654,10 +1617,7 @@ func TestProcessMessage_SwitchModelRejectsUnknownAlias(t *testing.T) {
 	}
 
 	if provider.calls != 0 {
-		t.Fatalf(
-			"LLM should not be called for rejected /switch and /show, calls=%d",
-			provider.calls,
-		)
+		t.Fatalf("LLM should not be called for rejected /switch and /show, calls=%d", provider.calls)
 	}
 }
 
@@ -1675,13 +1635,7 @@ func TestProcessMessage_SwitchModelRoutesSubsequentRequestsToSelectedProvider(t 
 
 	remoteCalls := 0
 	remoteModel := ""
-	remoteServer := newChatCompletionTestServer(
-		t,
-		"remote",
-		"remote reply",
-		&remoteCalls,
-		&remoteModel,
-	)
+	remoteServer := newChatCompletionTestServer(t, "remote", "remote reply", &remoteCalls, &remoteModel)
 	defer remoteServer.Close()
 
 	cfg := &config.Config{
@@ -2004,9 +1958,7 @@ func TestAgentLoop_ContextExhaustionRetry(t *testing.T) {
 	msgBus := bus.NewMessageBus()
 
 	// Create a provider that fails once with a context error
-	contextErr := fmt.Errorf(
-		"InvalidParameter: Total tokens of image and text exceed max message tokens",
-	)
+	contextErr := fmt.Errorf("InvalidParameter: Total tokens of image and text exceed max message tokens")
 	provider := &failFirstMockProvider{
 		failures:    1,
 		failError:   contextErr,
@@ -2087,13 +2039,7 @@ func TestAgentLoop_EmptyModelResponseUsesAccurateFallback(t *testing.T) {
 	provider := &simpleMockProvider{response: ""}
 	al := NewAgentLoop(cfg, msgBus, provider)
 
-	response, err := al.ProcessDirectWithChannel(
-		context.Background(),
-		"hello",
-		"empty-response",
-		"test",
-		"chat1",
-	)
+	response, err := al.ProcessDirectWithChannel(context.Background(), "hello", "empty-response", "test", "chat1")
 	if err != nil {
 		t.Fatalf("ProcessDirectWithChannel failed: %v", err)
 	}
@@ -2125,13 +2071,7 @@ func TestAgentLoop_ToolLimitUsesDedicatedFallback(t *testing.T) {
 	al := NewAgentLoop(cfg, msgBus, provider)
 	al.RegisterTool(&toolLimitTestTool{})
 
-	response, err := al.ProcessDirectWithChannel(
-		context.Background(),
-		"hello",
-		"tool-limit",
-		"test",
-		"chat1",
-	)
+	response, err := al.ProcessDirectWithChannel(context.Background(), "hello", "tool-limit", "test", "chat1")
 	if err != nil {
 		t.Fatalf("ProcessDirectWithChannel failed: %v", err)
 	}
@@ -2449,9 +2389,7 @@ func TestHandleReasoning(t *testing.T) {
 					break
 				}
 				if msg.Content == "should timeout" {
-					t.Fatal(
-						"expected reasoning message to be dropped when bus is full, but it was published",
-					)
+					t.Fatal("expected reasoning message to be dropped when bus is full, but it was published")
 				}
 			}
 		}
@@ -2545,12 +2483,7 @@ func TestProcessHeartbeat_DoesNotPublishToolFeedback(t *testing.T) {
 	provider := &toolFeedbackProvider{filePath: heartbeatFile}
 	al := NewAgentLoop(cfg, msgBus, provider)
 
-	response, err := al.ProcessHeartbeat(
-		context.Background(),
-		"check heartbeat tasks",
-		"telegram",
-		"chat-1",
-	)
+	response, err := al.ProcessHeartbeat(context.Background(), "check heartbeat tasks", "telegram", "chat-1")
 	if err != nil {
 		t.Fatalf("ProcessHeartbeat() error = %v", err)
 	}
@@ -3035,14 +2968,8 @@ func TestProcessMessage_ContextOverflowRecovery(t *testing.T) {
 	agent := al.GetRegistry().GetDefaultAgent()
 
 	for i := 0; i < 5; i++ {
-		agent.Sessions.AddFullMessage(
-			sessionKey,
-			providers.Message{Role: "user", Content: "heavy message"},
-		)
-		agent.Sessions.AddFullMessage(
-			sessionKey,
-			providers.Message{Role: "assistant", Content: "response"},
-		)
+		agent.Sessions.AddFullMessage(sessionKey, providers.Message{Role: "user", Content: "heavy message"})
+		agent.Sessions.AddFullMessage(sessionKey, providers.Message{Role: "assistant", Content: "response"})
 	}
 
 	response, err := al.processMessage(context.Background(), bus.InboundMessage{

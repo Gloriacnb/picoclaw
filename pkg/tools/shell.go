@@ -113,11 +113,7 @@ var (
 	}
 )
 
-func NewExecTool(
-	workingDir string,
-	restrict bool,
-	allowPaths ...[]*regexp.Regexp,
-) (*ExecTool, error) {
+func NewExecTool(workingDir string, restrict bool, allowPaths ...[]*regexp.Regexp) (*ExecTool, error) {
 	return NewExecToolWithConfig(workingDir, restrict, nil, allowPaths...)
 }
 
@@ -197,16 +193,8 @@ func (t *ExecTool) Parameters() map[string]any {
 		"type": "object",
 		"properties": map[string]any{
 			"action": map[string]any{
-				"type": "string",
-				"enum": []string{
-					"run",
-					"list",
-					"poll",
-					"read",
-					"write",
-					"kill",
-					"send-keys",
-				},
+				"type":        "string",
+				"enum":        []string{"run", "list", "poll", "read", "write", "kill", "send-keys"},
 				"description": "Action: run (execute command), list (show sessions), poll (check status), read (get output), write (send input), kill (terminate), send-keys (send keys to PTY)",
 			},
 			"command": map[string]any{
@@ -312,12 +300,7 @@ func (t *ExecTool) executeRun(ctx context.Context, args map[string]any) *ToolRes
 	cwd := t.workingDir
 	if wd, ok := args["cwd"].(string); ok && wd != "" {
 		if t.restrictToWorkspace && t.workingDir != "" {
-			resolvedWD, err := validatePathWithAllowPaths(
-				wd,
-				t.workingDir,
-				true,
-				t.allowedPathPatterns,
-			)
+			resolvedWD, err := validatePathWithAllowPaths(wd, t.workingDir, true, t.allowedPathPatterns)
 			if err != nil {
 				return ErrorResult("Command blocked by safety guard (" + err.Error() + ")")
 			}
@@ -343,9 +326,7 @@ func (t *ExecTool) executeRun(ctx context.Context, args map[string]any) *ToolRes
 	if t.restrictToWorkspace && t.workingDir != "" && cwd != t.workingDir {
 		resolved, err := filepath.EvalSymlinks(cwd)
 		if err != nil {
-			return ErrorResult(
-				fmt.Sprintf("Command blocked by safety guard (path resolution failed: %v)", err),
-			)
+			return ErrorResult(fmt.Sprintf("Command blocked by safety guard (path resolution failed: %v)", err))
 		}
 		if isAllowedPath(resolved, t.allowedPathPatterns) {
 			cwd = resolved
@@ -383,14 +364,7 @@ func (t *ExecTool) runSync(ctx context.Context, command, cwd string) *ToolResult
 
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
-		cmd = exec.CommandContext(
-			cmdCtx,
-			"powershell",
-			"-NoProfile",
-			"-NonInteractive",
-			"-Command",
-			command,
-		)
+		cmd = exec.CommandContext(cmdCtx, "powershell", "-NoProfile", "-NonInteractive", "-Command", command)
 	} else {
 		cmd = exec.CommandContext(cmdCtx, "sh", "-c", command)
 	}
@@ -468,10 +442,7 @@ func (t *ExecTool) runSync(ctx context.Context, command, cwd string) *ToolResult
 
 	maxLen := 10000
 	if len(output) > maxLen {
-		output = output[:maxLen] + fmt.Sprintf(
-			"\n... (truncated, %d more chars)",
-			len(output)-maxLen,
-		)
+		output = output[:maxLen] + fmt.Sprintf("\n... (truncated, %d more chars)", len(output)-maxLen)
 	}
 
 	if err != nil {
@@ -489,11 +460,7 @@ func (t *ExecTool) runSync(ctx context.Context, command, cwd string) *ToolResult
 	}
 }
 
-func (t *ExecTool) runBackground(
-	ctx context.Context,
-	command, cwd string,
-	ptyEnabled bool,
-) *ToolResult {
+func (t *ExecTool) runBackground(ctx context.Context, command, cwd string, ptyEnabled bool) *ToolResult {
 	sessionID := generateSessionID()
 	session := &ProcessSession{
 		ID:         sessionID,
@@ -586,8 +553,7 @@ func (t *ExecTool) runBackground(
 				n, err := session.ptyMaster.Read(buf)
 				if n > 0 {
 					raw := string(buf[:n])
-					if mode := detectPtyKeyMode(raw); mode != PtyKeyModeNotFound &&
-						mode != session.GetPtyKeyMode() {
+					if mode := detectPtyKeyMode(raw); mode != PtyKeyModeNotFound && mode != session.GetPtyKeyMode() {
 						session.SetPtyKeyMode(mode)
 					}
 
@@ -768,16 +734,12 @@ func (t *ExecTool) executeWrite(args map[string]any) *ToolResult {
 	}
 
 	if session.IsDone() {
-		return ErrorResult(
-			fmt.Sprintf("process already exited with code %d", session.GetExitCode()),
-		)
+		return ErrorResult(fmt.Sprintf("process already exited with code %d", session.GetExitCode()))
 	}
 
 	if err := session.Write(data); err != nil {
 		if errors.Is(err, ErrSessionDone) {
-			return ErrorResult(
-				fmt.Sprintf("process already exited with code %d", session.GetExitCode()),
-			)
+			return ErrorResult(fmt.Sprintf("process already exited with code %d", session.GetExitCode()))
 		}
 		return ErrorResult(fmt.Sprintf("failed to write to session: %v", err))
 	}
@@ -808,9 +770,7 @@ func (t *ExecTool) executeKill(args map[string]any) *ToolResult {
 	}
 
 	if session.IsDone() {
-		return ErrorResult(
-			fmt.Sprintf("process already exited with code %d", session.GetExitCode()),
-		)
+		return ErrorResult(fmt.Sprintf("process already exited with code %d", session.GetExitCode()))
 	}
 
 	if err := session.Kill(); err != nil {
@@ -1032,16 +992,12 @@ func (t *ExecTool) executeSendKeys(args map[string]any) *ToolResult {
 	}
 
 	if session.IsDone() {
-		return ErrorResult(
-			fmt.Sprintf("process already exited with code %d", session.GetExitCode()),
-		)
+		return ErrorResult(fmt.Sprintf("process already exited with code %d", session.GetExitCode()))
 	}
 
 	if err := session.Write(data); err != nil {
 		if errors.Is(err, ErrSessionDone) {
-			return ErrorResult(
-				fmt.Sprintf("process already exited with code %d", session.GetExitCode()),
-			)
+			return ErrorResult(fmt.Sprintf("process already exited with code %d", session.GetExitCode()))
 		}
 		return ErrorResult(fmt.Sprintf("failed to send keys: %v", err))
 	}

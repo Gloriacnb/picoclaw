@@ -500,11 +500,8 @@ func TestEstimateMessageTokens_ReasoningContent(t *testing.T) {
 	reasoningTokens := estimateMessageTokens(withReasoning)
 
 	if reasoningTokens <= plainTokens {
-		t.Errorf(
-			"message with ReasoningContent (%d tokens) should exceed plain message (%d tokens)",
-			reasoningTokens,
-			plainTokens,
-		)
+		t.Errorf("message with ReasoningContent (%d tokens) should exceed plain message (%d tokens)",
+			reasoningTokens, plainTokens)
 	}
 }
 
@@ -767,11 +764,7 @@ func TestEstimateMessageTokens_WithReasoningAndMedia(t *testing.T) {
 	tokensNoReasoning := estimateMessageTokens(msgNoReasoning)
 
 	if tokens <= tokensNoReasoning {
-		t.Errorf(
-			"reasoning content should add tokens: with=%d, without=%d",
-			tokens,
-			tokensNoReasoning,
-		)
+		t.Errorf("reasoning content should add tokens: with=%d, without=%d", tokens, tokensNoReasoning)
 	}
 }
 

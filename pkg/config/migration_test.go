@@ -91,11 +91,9 @@ func TestConvertProvidersToModelList_LiteLLM(t *testing.T) {
 func TestConvertProvidersToModelList_Multiple(t *testing.T) {
 	cfg := &configV0{
 		Providers: providersConfigV0{
-			OpenAI: openAIProviderConfigV0{
-				providerConfigV0: providerConfigV0{APIKey: "openai-key"},
-			},
-			Groq:  providerConfigV0{APIKey: "groq-key"},
-			Zhipu: providerConfigV0{APIKey: "zhipu-key"},
+			OpenAI: openAIProviderConfigV0{providerConfigV0: providerConfigV0{APIKey: "openai-key"}},
+			Groq:   providerConfigV0{APIKey: "groq-key"},
+			Zhipu:  providerConfigV0{APIKey: "zhipu-key"},
 		},
 	}
 
@@ -144,13 +142,8 @@ func TestConvertProvidersToModelList_AllProviders(t *testing.T) {
 	// Other providers have no configuration, so they won't be converted.
 	cfg := &configV0{
 		Providers: providersConfigV0{
-			OpenAI: openAIProviderConfigV0{
-				providerConfigV0: providerConfigV0{APIKey: "key1"},
-			},
-			LiteLLM: providerConfigV0{
-				APIKey:  "key-litellm",
-				APIBase: "http://localhost:4000/v1",
-			},
+			OpenAI:        openAIProviderConfigV0{providerConfigV0: providerConfigV0{APIKey: "key1"}},
+			LiteLLM:       providerConfigV0{APIKey: "key-litellm", APIBase: "http://localhost:4000/v1"},
 			Anthropic:     providerConfigV0{APIKey: "key2"},
 			OpenRouter:    providerConfigV0{APIKey: "key3"},
 			Groq:          providerConfigV0{APIKey: "key4"},
@@ -268,11 +261,7 @@ func TestConvertProvidersToModelList_PreservesUserModel_DeepSeek(t *testing.T) {
 
 	// Should use user's model, not default
 	if result[0].Model != "deepseek/deepseek-reasoner" {
-		t.Errorf(
-			"Model = %q, want %q (user's configured model)",
-			result[0].Model,
-			"deepseek/deepseek-reasoner",
-		)
+		t.Errorf("Model = %q, want %q (user's configured model)", result[0].Model, "deepseek/deepseek-reasoner")
 	}
 }
 
@@ -382,9 +371,7 @@ func TestConvertProvidersToModelList_MultipleProviders_PreservesUserModel(t *tes
 			},
 		},
 		Providers: providersConfigV0{
-			OpenAI: openAIProviderConfigV0{
-				providerConfigV0: providerConfigV0{APIKey: "sk-openai"},
-			},
+			OpenAI:   openAIProviderConfigV0{providerConfigV0: providerConfigV0{APIKey: "sk-openai"}},
 			DeepSeek: providerConfigV0{APIKey: "sk-deepseek"},
 		},
 	}
@@ -404,11 +391,7 @@ func TestConvertProvidersToModelList_MultipleProviders_PreservesUserModel(t *tes
 			}
 		case "deepseek":
 			if mc.Model != "deepseek/deepseek-reasoner" {
-				t.Errorf(
-					"DeepSeek Model = %q, want %q (user's)",
-					mc.Model,
-					"deepseek/deepseek-reasoner",
-				)
+				t.Errorf("DeepSeek Model = %q, want %q (user's)", mc.Model, "deepseek/deepseek-reasoner")
 			}
 		}
 	}
@@ -506,11 +489,7 @@ func TestConvertProvidersToModelList_NoProviderField_SingleProvider(t *testing.T
 
 	// ModelName should be the user's model value for backward compatibility
 	if result[0].ModelName != "glm-4.7" {
-		t.Errorf(
-			"ModelName = %q, want %q (user's model for backward compatibility)",
-			result[0].ModelName,
-			"glm-4.7",
-		)
+		t.Errorf("ModelName = %q, want %q (user's model for backward compatibility)", result[0].ModelName, "glm-4.7")
 	}
 
 	// Model should use the user's model with protocol prefix
@@ -531,10 +510,8 @@ func TestConvertProvidersToModelList_NoProviderField_MultipleProviders(t *testin
 			},
 		},
 		Providers: providersConfigV0{
-			OpenAI: openAIProviderConfigV0{
-				providerConfigV0: providerConfigV0{APIKey: "openai-key"},
-			},
-			Zhipu: providerConfigV0{APIKey: "zhipu-key"},
+			OpenAI: openAIProviderConfigV0{providerConfigV0: providerConfigV0{APIKey: "openai-key"}},
+			Zhipu:  providerConfigV0{APIKey: "zhipu-key"},
 		},
 	}
 
@@ -594,11 +571,7 @@ func TestBuildModelWithProtocol_NoPrefix(t *testing.T) {
 func TestBuildModelWithProtocol_AlreadyHasPrefix(t *testing.T) {
 	result := buildModelWithProtocol("openrouter", "openrouter/auto")
 	if result != "openrouter/auto" {
-		t.Errorf(
-			"buildModelWithProtocol(openrouter, openrouter/auto) = %q, want %q",
-			result,
-			"openrouter/auto",
-		)
+		t.Errorf("buildModelWithProtocol(openrouter, openrouter/auto) = %q, want %q", result, "openrouter/auto")
 	}
 }
 
@@ -640,10 +613,6 @@ func TestConvertProvidersToModelList_LegacyModelWithProtocolPrefix(t *testing.T)
 
 	// Model should NOT have duplicated prefix
 	if result[0].Model != "openrouter/auto" {
-		t.Errorf(
-			"Model = %q, want %q (should not duplicate prefix)",
-			result[0].Model,
-			"openrouter/auto",
-		)
+		t.Errorf("Model = %q, want %q (should not duplicate prefix)", result[0].Model, "openrouter/auto")
 	}
 }

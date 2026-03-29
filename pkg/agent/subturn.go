@@ -505,12 +505,7 @@ func spawnSubTurn(
 // Event emissions:
 //   - SubTurnResultDeliveredEvent: successful delivery to channel
 //   - SubTurnOrphanResultEvent: delivery failed (parent finished or channel full)
-func deliverSubTurnResult(
-	al *AgentLoop,
-	parentTS *turnState,
-	childID string,
-	result *tools.ToolResult,
-) {
+func deliverSubTurnResult(al *AgentLoop, parentTS *turnState, childID string, result *tools.ToolResult) {
 	// Let GC clean up the pendingResults channel; parent Finish will no longer close it.
 	// We use defer/recover to catch any unlikely channel panics if it were ever closed.
 	defer func() {
@@ -521,14 +516,9 @@ func deliverSubTurnResult(
 				"recover":   r,
 			})
 			if result != nil && al != nil {
-				al.emitEvent(
-					EventKindSubTurnOrphan,
+				al.emitEvent(EventKindSubTurnOrphan,
 					parentTS.eventMeta("deliverSubTurnResult", "subturn.orphan"),
-					SubTurnOrphanPayload{
-						ParentTurnID: parentTS.turnID,
-						ChildTurnID:  childID,
-						Reason:       "panic",
-					},
+					SubTurnOrphanPayload{ParentTurnID: parentTS.turnID, ChildTurnID: childID, Reason: "panic"},
 				)
 			}
 		}
@@ -541,14 +531,9 @@ func deliverSubTurnResult(
 	// If parent turn has already finished, treat this as an orphan result
 	if isFinished || resultChan == nil {
 		if result != nil && al != nil {
-			al.emitEvent(
-				EventKindSubTurnOrphan,
+			al.emitEvent(EventKindSubTurnOrphan,
 				parentTS.eventMeta("deliverSubTurnResult", "subturn.orphan"),
-				SubTurnOrphanPayload{
-					ParentTurnID: parentTS.turnID,
-					ChildTurnID:  childID,
-					Reason:       "parent_finished",
-				},
+				SubTurnOrphanPayload{ParentTurnID: parentTS.turnID, ChildTurnID: childID, Reason: "parent_finished"},
 			)
 		}
 		return

@@ -151,19 +151,7 @@ func TestSanitizeHistoryForProvider_MultiToolCallsThenNewRound(t *testing.T) {
 	if len(result) != 9 {
 		t.Fatalf("expected 9 messages, got %d: %+v", len(result), roles(result))
 	}
-	assertRoles(
-		t,
-		result,
-		"user",
-		"assistant",
-		"tool",
-		"tool",
-		"assistant",
-		"user",
-		"assistant",
-		"tool",
-		"assistant",
-	)
+	assertRoles(t, result, "user", "assistant", "tool", "tool", "assistant", "user", "assistant", "tool", "assistant")
 }
 
 func TestSanitizeHistoryForProvider_ConsecutiveMultiToolRounds(t *testing.T) {
@@ -182,18 +170,7 @@ func TestSanitizeHistoryForProvider_ConsecutiveMultiToolRounds(t *testing.T) {
 	if len(result) != 8 {
 		t.Fatalf("expected 8 messages, got %d: %+v", len(result), roles(result))
 	}
-	assertRoles(
-		t,
-		result,
-		"user",
-		"assistant",
-		"tool",
-		"tool",
-		"assistant",
-		"tool",
-		"tool",
-		"assistant",
-	)
+	assertRoles(t, result, "user", "assistant", "tool", "tool", "assistant", "tool", "tool", "assistant")
 }
 
 func TestSanitizeHistoryForProvider_PlainConversation(t *testing.T) {
@@ -327,17 +304,5 @@ func TestSanitizeHistoryForProvider_PartialToolResultsInMiddle(t *testing.T) {
 	if len(result) != 9 {
 		t.Fatalf("expected 9 messages, got %d: %+v", len(result), roles(result))
 	}
-	assertRoles(
-		t,
-		result,
-		"user",
-		"assistant",
-		"tool",
-		"assistant",
-		"user",
-		"user",
-		"assistant",
-		"tool",
-		"assistant",
-	)
+	assertRoles(t, result, "user", "assistant", "tool", "assistant", "user", "user", "assistant", "tool", "assistant")
 }
