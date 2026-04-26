@@ -47,12 +47,33 @@ const (
 
 	// KindChannelLifecycleStarted is emitted when a channel starts.
 	KindChannelLifecycleStarted Kind = "channel.lifecycle.started"
+	// KindChannelLifecycleInitialized is emitted when a channel is initialized.
+	KindChannelLifecycleInitialized Kind = "channel.lifecycle.initialized"
 	// KindChannelLifecycleStartFailed is emitted when a channel fails to start.
 	KindChannelLifecycleStartFailed Kind = "channel.lifecycle.start_failed"
+	// KindChannelLifecycleStopped is emitted when a channel stops.
+	KindChannelLifecycleStopped Kind = "channel.lifecycle.stopped"
+	// KindChannelWebhookRegistered is emitted when a channel webhook is registered.
+	KindChannelWebhookRegistered Kind = "channel.webhook.registered"
+	// KindChannelWebhookUnregistered is emitted when a channel webhook is unregistered.
+	KindChannelWebhookUnregistered Kind = "channel.webhook.unregistered"
+	// KindChannelMessageOutboundQueued is emitted when an outbound message is queued.
+	KindChannelMessageOutboundQueued Kind = "channel.message.outbound_queued"
 	// KindChannelMessageOutboundSent is emitted when an outbound channel message is sent.
 	KindChannelMessageOutboundSent Kind = "channel.message.outbound_sent"
 	// KindChannelMessageOutboundFailed is emitted when an outbound channel message fails.
 	KindChannelMessageOutboundFailed Kind = "channel.message.outbound_failed"
+	// KindChannelRateLimited is emitted when channel rate limiting blocks delivery.
+	KindChannelRateLimited Kind = "channel.rate_limited"
+
+	// KindBusPublishFailed is emitted when message bus publish fails.
+	KindBusPublishFailed Kind = "bus.publish.failed"
+	// KindBusCloseStarted is emitted when message bus close starts.
+	KindBusCloseStarted Kind = "bus.close.started"
+	// KindBusCloseCompleted is emitted when message bus close completes.
+	KindBusCloseCompleted Kind = "bus.close.completed"
+	// KindBusCloseDrained is emitted when message bus close drains buffered messages.
+	KindBusCloseDrained Kind = "bus.close.drained"
 
 	// KindGatewayReloadStarted is emitted when gateway reload starts.
 	KindGatewayReloadStarted Kind = "gateway.reload.started"
@@ -63,6 +84,14 @@ const (
 
 	// KindMCPServerConnected is emitted when an MCP server connects.
 	KindMCPServerConnected Kind = "mcp.server.connected"
+	// KindMCPServerConnecting is emitted before connecting to an MCP server.
+	KindMCPServerConnecting Kind = "mcp.server.connecting"
 	// KindMCPServerFailed is emitted when an MCP server fails.
 	KindMCPServerFailed Kind = "mcp.server.failed"
+	// KindMCPToolDiscovered is emitted when an MCP tool is discovered.
+	KindMCPToolDiscovered Kind = "mcp.tool.discovered"
+	// KindMCPToolCallStart is emitted when an MCP tool call starts.
+	KindMCPToolCallStart Kind = "mcp.tool.call.start"
+	// KindMCPToolCallEnd is emitted when an MCP tool call ends.
+	KindMCPToolCallEnd Kind = "mcp.tool.call.end"
 )

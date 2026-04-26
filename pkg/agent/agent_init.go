@@ -79,7 +79,7 @@ func NewAgentLoop(
 		al.ownsRuntimeEvents = true
 	}
 	al.providerFactory = providers.CreateProviderFromConfig
-	al.hooks = NewHookManager(eventBus)
+	al.hooks = NewHookManagerWithRuntimeEvents(eventBus, al.runtimeEvents.Channel())
 	configureHookManagerFromConfig(al.hooks, cfg)
 	al.contextManager = al.resolveContextManager()
 

@@ -12,6 +12,7 @@ import (
 
 	"github.com/sipeed/picoclaw/pkg/bus"
 	"github.com/sipeed/picoclaw/pkg/config"
+	runtimeevents "github.com/sipeed/picoclaw/pkg/events"
 	"github.com/sipeed/picoclaw/pkg/providers"
 	"github.com/sipeed/picoclaw/pkg/routing"
 	"github.com/sipeed/picoclaw/pkg/session"
@@ -148,6 +149,31 @@ func (h *llmObserverHook) AfterLLM(
 	next := resp.Clone()
 	next.Response.Content = "hooked content"
 	return next, HookDecision{Action: HookActionModify}, nil
+}
+
+type dualRuntimeObserverHook struct {
+	legacyCh  chan Event
+	runtimeCh chan runtimeevents.Event
+}
+
+func (h *dualRuntimeObserverHook) OnEvent(ctx context.Context, evt Event) error {
+	if evt.Kind == EventKindTurnEnd {
+		select {
+		case h.legacyCh <- evt:
+		default:
+		}
+	}
+	return nil
+}
+
+func (h *dualRuntimeObserverHook) OnRuntimeEvent(ctx context.Context, evt runtimeevents.Event) error {
+	if evt.Kind == runtimeevents.KindAgentTurnEnd {
+		select {
+		case h.runtimeCh <- evt:
+		default:
+		}
+	}
+	return nil
 }
 
 type llmSystemRewriteHook struct{}
@@ -495,6 +521,65 @@ func TestAgentLoop_Hooks_ObserverAndLLMInterceptor(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for hook observer event")
+	}
+}
+
+func TestAgentLoop_Hooks_RuntimeObserverPreferredOverLegacyObserver(t *testing.T) {
+	provider := &llmHookTestProvider{}
+	al, agent, cleanup := newHookTestLoop(t, provider)
+	defer cleanup()
+
+	hook := &dualRuntimeObserverHook{
+		legacyCh:  make(chan Event, 1),
+		runtimeCh: make(chan runtimeevents.Event, 1),
+	}
+	if err := al.MountHook(NamedHook("runtime-observer", hook)); err != nil {
+		t.Fatalf("MountHook failed: %v", err)
+	}
+
+	resp, err := al.runAgentLoop(context.Background(), agent, processOptions{
+		SessionKey:      "session-1",
+		Channel:         "cli",
+		ChatID:          "direct",
+		UserMessage:     "hello",
+		DefaultResponse: defaultResponse,
+		EnableSummary:   false,
+		SendResponse:    false,
+		InboundContext: &bus.InboundContext{
+			Channel:   "cli",
+			Account:   "default",
+			ChatID:    "direct",
+			ChatType:  "direct",
+			SenderID:  "hook-user",
+			MessageID: "msg-1",
+		},
+	})
+	if err != nil {
+		t.Fatalf("runAgentLoop failed: %v", err)
+	}
+	if resp != "provider content" {
+		t.Fatalf("expected provider content, got %q", resp)
+	}
+
+	select {
+	case evt := <-hook.runtimeCh:
+		if evt.Kind != runtimeevents.KindAgentTurnEnd {
+			t.Fatalf("runtime observer kind = %q", evt.Kind)
+		}
+		if evt.Scope.SessionKey != "session-1" ||
+			evt.Scope.Channel != "cli" ||
+			evt.Scope.ChatID != "direct" ||
+			evt.Scope.MessageID != "msg-1" {
+			t.Fatalf("runtime observer scope = %+v", evt.Scope)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for runtime observer event")
+	}
+
+	select {
+	case evt := <-hook.legacyCh:
+		t.Fatalf("legacy observer unexpectedly received %v", evt.Kind)
+	case <-time.After(100 * time.Millisecond):
 	}
 }
 

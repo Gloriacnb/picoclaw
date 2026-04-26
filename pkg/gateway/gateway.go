@@ -39,6 +39,7 @@ import (
 	"github.com/sipeed/picoclaw/pkg/config"
 	"github.com/sipeed/picoclaw/pkg/cron"
 	"github.com/sipeed/picoclaw/pkg/devices"
+	runtimeevents "github.com/sipeed/picoclaw/pkg/events"
 	"github.com/sipeed/picoclaw/pkg/health"
 	"github.com/sipeed/picoclaw/pkg/heartbeat"
 	"github.com/sipeed/picoclaw/pkg/logger"
@@ -197,6 +198,7 @@ func Run(debug bool, homePath, configPath string, allowEmptyStartup bool) (runEr
 
 	msgBus := bus.NewMessageBus()
 	agentLoop := agent.NewAgentLoop(cfg, msgBus, provider)
+	msgBus.SetEventPublisher(agentLoop.RuntimeEventBus())
 
 	fmt.Println("\n📦 Agent Status:")
 	startupInfo := agentLoop.GetStartupInfo()
@@ -312,10 +314,20 @@ func executeReload(
 	msgBus *bus.MessageBus,
 	allowEmptyStartup bool,
 	debug bool,
-) error {
+) (err error) {
+	startedAt := time.Now()
+	publishGatewayReloadEvent(agentLoop, runtimeevents.KindGatewayReloadStarted, startedAt, nil)
 	defer runningServices.reloading.Store(false)
+	defer func() {
+		if err != nil {
+			publishGatewayReloadEvent(agentLoop, runtimeevents.KindGatewayReloadFailed, startedAt, err)
+			return
+		}
+		publishGatewayReloadEvent(agentLoop, runtimeevents.KindGatewayReloadCompleted, startedAt, nil)
+	}()
 
-	return handleConfigReload(ctx, agentLoop, newCfg, provider, runningServices, msgBus, allowEmptyStartup, debug)
+	err = handleConfigReload(ctx, agentLoop, newCfg, provider, runningServices, msgBus, allowEmptyStartup, debug)
+	return err
 }
 
 func createStartupProvider(
@@ -383,7 +395,12 @@ func setupAndStartServices(
 		fms.Start()
 	}
 
-	runningServices.ChannelManager, err = channels.NewManager(cfg, msgBus, runningServices.MediaStore)
+	runningServices.ChannelManager, err = channels.NewManager(
+		cfg,
+		msgBus,
+		runningServices.MediaStore,
+		channels.WithRuntimeEvents(agentLoop.RuntimeEventBus()),
+	)
 	if err != nil {
 		if fms, ok := runningServices.MediaStore.(*media.FileMediaStore); ok {
 			fms.Stop()

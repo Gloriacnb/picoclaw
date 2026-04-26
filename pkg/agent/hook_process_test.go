@@ -66,7 +66,7 @@ func TestAgentLoop_MountProcessHook_LLMAndObserver(t *testing.T) {
 		t.Fatalf("expected process model, got %q", lastModel)
 	}
 
-	waitForFileContains(t, eventLog, "turn_end")
+	waitForFileContains(t, eventLog, "agent.turn.end")
 }
 
 func TestAgentLoop_MountProcessHook_ToolRewrite(t *testing.T) {
@@ -350,10 +350,12 @@ func runProcessHookHelper() error {
 		}
 
 		if msg.ID == 0 {
-			if msg.Method == "hook.event" && eventLog != "" {
+			if (msg.Method == "hook.event" || msg.Method == "hook.runtime_event") && eventLog != "" {
 				var evt map[string]any
 				if err := json.Unmarshal(msg.Params, &evt); err == nil {
-					if rawKind, ok := evt["Kind"].(float64); ok {
+					if kind, ok := evt["kind"].(string); ok {
+						_ = os.WriteFile(eventLog, []byte(kind+"\n"), 0o644)
+					} else if rawKind, ok := evt["Kind"].(float64); ok {
 						kind := EventKind(rawKind)
 						_ = os.WriteFile(eventLog, []byte(kind.String()+"\n"), 0o644)
 					}

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	runtimeevents "github.com/sipeed/picoclaw/pkg/events"
 	"github.com/sipeed/picoclaw/pkg/logger"
 	"github.com/sipeed/picoclaw/pkg/providers"
 	"github.com/sipeed/picoclaw/pkg/tools"
@@ -73,6 +74,10 @@ func NamedHook(name string, hook any) HookRegistration {
 
 type EventObserver interface {
 	OnEvent(ctx context.Context, evt Event) error
+}
+
+type RuntimeEventObserver interface {
+	OnRuntimeEvent(ctx context.Context, evt runtimeevents.Event) error
 }
 
 type LLMInterceptor interface {
@@ -193,6 +198,7 @@ func (r *ToolResultHookResponse) Clone() *ToolResultHookResponse {
 
 type HookManager struct {
 	eventBus           *EventBus
+	runtimeEvents      runtimeevents.EventChannel
 	observerTimeout    time.Duration
 	interceptorTimeout time.Duration
 	approvalTimeout    time.Duration
@@ -201,28 +207,56 @@ type HookManager struct {
 	hooks   map[string]HookRegistration
 	ordered []HookRegistration
 
-	sub       EventSubscription
-	done      chan struct{}
-	closeOnce sync.Once
+	sub                   EventSubscription
+	runtimeSub            runtimeevents.Subscription
+	done                  chan struct{}
+	runtimeDone           chan struct{}
+	runtimeObserveEnabled bool
+	closeOnce             sync.Once
 }
 
 func NewHookManager(eventBus *EventBus) *HookManager {
+	return NewHookManagerWithRuntimeEvents(eventBus, nil)
+}
+
+func NewHookManagerWithRuntimeEvents(eventBus *EventBus, runtimeEvents runtimeevents.EventChannel) *HookManager {
 	hm := &HookManager{
 		eventBus:           eventBus,
+		runtimeEvents:      runtimeEvents,
 		observerTimeout:    defaultHookObserverTimeout,
 		interceptorTimeout: defaultHookInterceptorTimeout,
 		approvalTimeout:    defaultHookApprovalTimeout,
 		hooks:              make(map[string]HookRegistration),
 		done:               make(chan struct{}),
+		runtimeDone:        make(chan struct{}),
 	}
 
-	if eventBus == nil {
+	if eventBus != nil {
+		hm.sub = eventBus.Subscribe(hookObserverBufferSize)
+		go hm.dispatchEvents()
+	} else {
 		close(hm.done)
-		return hm
 	}
 
-	hm.sub = eventBus.Subscribe(hookObserverBufferSize)
-	go hm.dispatchEvents()
+	if runtimeEvents != nil {
+		sub, ch, err := runtimeEvents.SubscribeChan(context.Background(), runtimeevents.SubscribeOptions{
+			Name:   "hook-manager-observer",
+			Buffer: hookObserverBufferSize,
+		})
+		if err != nil {
+			logger.WarnCF("hooks", "Failed to subscribe runtime events for hooks", map[string]any{
+				"error": err.Error(),
+			})
+			close(hm.runtimeDone)
+		} else {
+			hm.runtimeSub = sub
+			hm.runtimeObserveEnabled = true
+			go hm.dispatchRuntimeEvents(ch)
+		}
+	} else {
+		close(hm.runtimeDone)
+	}
+
 	return hm
 }
 
@@ -235,7 +269,15 @@ func (hm *HookManager) Close() {
 		if hm.eventBus != nil {
 			hm.eventBus.Unsubscribe(hm.sub.ID)
 		}
+		if hm.runtimeSub != nil {
+			if err := hm.runtimeSub.Close(); err != nil {
+				logger.WarnCF("hooks", "Failed to close runtime event hook subscription", map[string]any{
+					"error": err.Error(),
+				})
+			}
+		}
 		<-hm.done
+		<-hm.runtimeDone
 		hm.closeAllHooks()
 	})
 }
@@ -297,11 +339,30 @@ func (hm *HookManager) dispatchEvents() {
 
 	for evt := range hm.sub.C {
 		for _, reg := range hm.snapshotHooks() {
+			if hm.runtimeObserveEnabled {
+				if _, ok := reg.Hook.(RuntimeEventObserver); ok {
+					continue
+				}
+			}
 			observer, ok := reg.Hook.(EventObserver)
 			if !ok {
 				continue
 			}
 			hm.runObserver(reg.Name, observer, evt)
+		}
+	}
+}
+
+func (hm *HookManager) dispatchRuntimeEvents(ch <-chan runtimeevents.Event) {
+	defer close(hm.runtimeDone)
+
+	for evt := range ch {
+		for _, reg := range hm.snapshotHooks() {
+			observer, ok := reg.Hook.(RuntimeEventObserver)
+			if !ok {
+				continue
+			}
+			hm.runRuntimeObserver(reg.Name, observer, evt)
 		}
 	}
 }
@@ -601,6 +662,37 @@ func (hm *HookManager) runObserver(name string, observer EventObserver, evt Even
 		}
 	case <-ctx.Done():
 		logger.WarnCF("hooks", "Event observer timed out", map[string]any{
+			"hook":       name,
+			"event":      evt.Kind.String(),
+			"timeout_ms": hm.observerTimeout.Milliseconds(),
+		})
+	}
+}
+
+func (hm *HookManager) runRuntimeObserver(
+	name string,
+	observer RuntimeEventObserver,
+	evt runtimeevents.Event,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), hm.observerTimeout)
+	defer cancel()
+
+	done := make(chan error, 1)
+	go func() {
+		done <- observer.OnRuntimeEvent(ctx, evt)
+	}()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			logger.WarnCF("hooks", "Runtime event observer failed", map[string]any{
+				"hook":  name,
+				"event": evt.Kind.String(),
+				"error": err.Error(),
+			})
+		}
+	case <-ctx.Done():
+		logger.WarnCF("hooks", "Runtime event observer timed out", map[string]any{
 			"hook":       name,
 			"event":      evt.Kind.String(),
 			"timeout_ms": hm.observerTimeout.Milliseconds(),

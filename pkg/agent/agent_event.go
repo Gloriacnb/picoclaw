@@ -206,3 +206,11 @@ func (al *AgentLoop) RuntimeEventStats() runtimeevents.Stats {
 	}
 	return al.runtimeEvents.Stats()
 }
+
+// RuntimeEventBus returns the runtime event bus used by the agent loop.
+func (al *AgentLoop) RuntimeEventBus() runtimeevents.Bus {
+	if al == nil {
+		return nil
+	}
+	return al.runtimeEvents
+}

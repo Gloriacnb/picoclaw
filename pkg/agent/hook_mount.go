@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sipeed/picoclaw/pkg/config"
+	runtimeevents "github.com/sipeed/picoclaw/pkg/events"
 )
 
 type hookRuntime struct {
@@ -295,10 +296,11 @@ func processHookObserveKindsFromConfig(observe []string) ([]string, bool, error)
 		case "", "*", "all":
 			return nil, true, nil
 		default:
-			if _, ok := validKinds[kind]; !ok {
+			normalizedKind, ok := validKinds[kind]
+			if !ok {
 				return nil, false, fmt.Errorf("unsupported observe event %q", kind)
 			}
-			normalized = append(normalized, kind)
+			normalized = append(normalized, normalizedKind)
 		}
 	}
 
@@ -308,10 +310,15 @@ func processHookObserveKindsFromConfig(observe []string) ([]string, bool, error)
 	return normalized, true, nil
 }
 
-func validHookEventKinds() map[string]struct{} {
-	kinds := make(map[string]struct{}, int(eventKindCount))
+func validHookEventKinds() map[string]string {
+	kinds := make(map[string]string, int(eventKindCount)*2)
 	for kind := EventKind(0); kind < eventKindCount; kind++ {
-		kinds[kind.String()] = struct{}{}
+		runtimeKind := runtimeKindForAgentEvent(kind).String()
+		kinds[kind.String()] = runtimeKind
+		kinds[runtimeKind] = runtimeKind
 	}
+	kinds[runtimeevents.KindAgentToolExecStart.String()] = runtimeevents.KindAgentToolExecStart.String()
+	kinds[runtimeevents.KindAgentToolExecEnd.String()] = runtimeevents.KindAgentToolExecEnd.String()
+	kinds[runtimeevents.KindAgentToolExecSkipped.String()] = runtimeevents.KindAgentToolExecSkipped.String()
 	return kinds
 }

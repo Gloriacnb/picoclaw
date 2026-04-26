@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	runtimeevents "github.com/sipeed/picoclaw/pkg/events"
 	"github.com/sipeed/picoclaw/pkg/isolation"
 	"github.com/sipeed/picoclaw/pkg/logger"
 	"github.com/sipeed/picoclaw/pkg/tools"
@@ -188,11 +189,24 @@ func (ph *ProcessHook) OnEvent(ctx context.Context, evt Event) error {
 		return nil
 	}
 	if len(ph.observeKinds) > 0 {
-		if _, ok := ph.observeKinds[evt.Kind.String()]; !ok {
+		kind := runtimeKindForAgentEvent(evt.Kind).String()
+		if _, ok := ph.observeKinds[kind]; !ok {
 			return nil
 		}
 	}
 	return ph.notify(ctx, "hook.event", evt)
+}
+
+func (ph *ProcessHook) OnRuntimeEvent(ctx context.Context, evt runtimeevents.Event) error {
+	if ph == nil || !ph.opts.Observe {
+		return nil
+	}
+	if len(ph.observeKinds) > 0 {
+		if _, ok := ph.observeKinds[evt.Kind.String()]; !ok {
+			return nil
+		}
+	}
+	return ph.notify(ctx, "hook.runtime_event", evt)
 }
 
 func (ph *ProcessHook) BeforeLLM(
