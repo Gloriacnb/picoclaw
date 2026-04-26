@@ -455,7 +455,7 @@ V1 不做复杂自动发现。
 ### Phase 3
 
 - 把 `SubagentManager` 迁移到 `runTurn/sub-turn`
-- 接通 `subturn_spawn` / `subturn_end` / `subturn_result_delivered`
+- 接通 `agent.subturn.spawn` / `agent.subturn.end` / `agent.subturn.result_delivered`
 
 ### Phase 4
 

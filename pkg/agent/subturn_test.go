@@ -326,7 +326,7 @@ func TestSpawnSubTurn_OrphanResultRouting(t *testing.T) {
 	time.Sleep(10 * time.Millisecond) // let event goroutine flush
 	// Verify Orphan event is emitted
 	if !collector.hasEventOfKind(runtimeevents.KindAgentSubTurnOrphan) {
-		t.Error("SubTurnOrphanResultEvent not emitted for finished parent")
+		t.Error("agent.subturn.orphan not emitted for finished parent")
 	}
 
 	// Verify history is NOT polluted

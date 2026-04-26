@@ -505,16 +505,16 @@ func spawnSubTurn(
 //
 // Delivery behavior:
 //   - If parent turn is still running: attempts to deliver to pendingResults channel
-//   - If channel is full: emits SubTurnOrphanResultEvent (result is lost from channel but tracked)
-//   - If parent turn has finished: emits SubTurnOrphanResultEvent (late arrival)
+//   - If channel is full: emits agent.subturn.orphan (result is lost from channel but tracked)
+//   - If parent turn has finished: emits agent.subturn.orphan (late arrival)
 //
 // Thread safety:
 //   - Reads parent state under lock, then releases lock before channel send
 //   - Small race window exists but is acceptable (worst case: result becomes orphan)
 //
 // Event emissions:
-//   - SubTurnResultDeliveredEvent: successful delivery to channel
-//   - SubTurnOrphanResultEvent: delivery failed (parent finished or channel full)
+//   - agent.subturn.result_delivered: successful delivery to channel
+//   - agent.subturn.orphan: delivery failed (parent finished or channel full)
 func deliverSubTurnResult(al *AgentLoop, parentTS *turnState, childID string, result *tools.ToolResult) {
 	// Let GC clean up the pendingResults channel; parent Finish will no longer close it.
 	// We use defer/recover to catch any unlikely channel panics if it were ever closed.
