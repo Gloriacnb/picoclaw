@@ -247,6 +247,19 @@ func (al *AgentLoop) Run(ctx context.Context) error {
 
 				if al.takePendingStop(sessionKey) {
 					al.activeTurnStates.Delete(sessionKey)
+					target := &continuationTarget{
+						SessionKey: sessionKey,
+						Channel:    m.Channel,
+						ChatID:     m.ChatID,
+					}
+					continued, continueErr := al.drainQueuedSteeringContinuations(ctx, target)
+					if continueErr != nil {
+						al.maybePublishError(ctx, m.Channel, m.ChatID, sessionKey, continueErr)
+						return
+					}
+					if continued != "" {
+						al.PublishResponseIfNeeded(ctx, target.Channel, target.ChatID, target.SessionKey, continued)
+					}
 					return
 				}
 
